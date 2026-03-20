@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Training">
+<title>Half Marathon Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:         #0d1117;
+    --surface:    #161b22;
+    --surface2:   #1c2330;
+    --border:     #2a3441;
+    --green:      #1db954;
+    --green-dim:  #155e3a;
+    --green-glow: rgba(29,185,84,0.15);
+    --orange:     #e67e22;
+    --orange-dim: #7a3e0e;
+    --blue:       #4a9eff;
+    --blue-dim:   #1a3a5c;
+    --purple:     #a855f7;
+    --purple-dim: #4a1570;
+    --red:        #e74c3c;
+    --text:       #e6edf3;
+    --text-muted: #7d8590;
+    --text-dim:   #9aafb8;
+    --strava:     #fc4c02;
+    --safe-top:   env(safe-area-inset-top, 0px);
+    --safe-bot:   env(safe-area-inset-bottom, 0px);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding-top: var(--safe-top);
+    padding-bottom: var(--safe-bot);
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: sticky; top: 0; z-index: 100;
+    padding: 16px 20px 14px;
+    padding-top: max(16px, var(--safe-top));
+    background: rgba(13,17,23,0.95);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+
+  .header-left .eyebrow {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 9px; font-weight: 700; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--green); margin-bottom: 2px;
+  }
+
+  .header-left h1 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 24px; font-weight: 900; letter-spacing: -0.5px; line-height: 1;
+  }
+  .header-left h1 span { color: var(--green); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer;
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+    font-size: 12px; letter-spacing: 1px; text-transform: uppercase;
+    transition: opacity .2s, transform .1s; white-space: nowrap;
+  }
+  .btn:active { transform: scale(0.96); opacity: 0.8; }
+  .btn-strava { background: var(--strava); color: #fff; }
+  .btn-green  { background: var(--green); color: #000; }
+  .btn-outline { background: var(--surface2); color: var(--text-muted); border: 1px solid var(--border); }
+
+  /* ── SETUP SCREEN ── */
+  #setup-screen {
+    padding: 32px 20px;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  .setup-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 24px;
+  }
+
+  .setup-icon { font-size: 40px; margin-bottom: 12px; }
+
+  .setup-card h2 {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 26px; font-weight: 900; margin-bottom: 6px;
+  }
+
+  .setup-card p {
+    font-size: 14px; color: var(--text-muted); line-height: 1.6; margin-bottom: 24px;
+  }
+
+  .field-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--text-muted);
+    margin-bottom: 6px; margin-top: 14px; display: block;
+  }
+
+  .field-input {
+    width: 100%; padding: 12px 14px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text);
+    font-family: 'Barlow', sans-serif; font-size: 14px;
+    outline: none; transition: border-color .2s;
+    -webkit-appearance: none;
+  }
+  .field-input:focus { border-color: var(--green); }
+
+  .setup-btn {
+    width: 100%; padding: 14px;
+    margin-top: 20px; border-radius: 10px;
+    font-size: 15px; justify-content: center;
+  }
+
+  .setup-note {
+    font-size: 11px; color: var(--text-muted);
+    text-align: center; margin-top: 14px; line-height: 1.5;
+  }
+
+  .setup-note a { color: var(--green); text-decoration: none; }
+
+  .strava-btn-big {
+    width: 100%; padding: 14px;
+    margin-top: 10px; border-radius: 10px;
+    font-size: 15px; justify-content: center;
+    background: var(--strava); color: #fff;
+  }
+
+  .divider {
+    display: flex; align-items: center; gap: 12px;
+    margin: 20px 0; color: var(--text-muted); font-size: 12px;
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
+
+  /* ── DASHBOARD ── */
+  #dashboard { display: none; padding: 16px 16px 32px; }
+
+  /* STATS */
+  .stats-row {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px;
+  }
+  .stat-card.green  { border-top: 2px solid var(--green);  }
+  .stat-card.orange { border-top: 2px solid var(--orange); }
+  .stat-card.blue   { border-top: 2px solid var(--blue);   }
+  .stat-card.purple { border-top: 2px solid var(--purple); }
+
+  .stat-label {
+    font-size: 9px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px;
+  }
+  .stat-value {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 28px; font-weight: 800; line-height: 1;
+  }
+  .stat-card.green  .stat-value { color: var(--green);  }
+  .stat-card.orange .stat-value { color: var(--orange); }
+  .stat-card.blue   .stat-value { color: var(--blue);   }
+  .stat-card.purple .stat-value { color: var(--purple); }
+  .stat-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* SECTION */
+  .section-eyebrow {
+    font-size: 9px; font-weight: 700; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--green); margin-bottom: 4px;
+  }
+  .section-title {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 18px; font-weight: 800; margin-bottom: 12px;
+  }
+
+  /* CURRENT WEEK CARD */
+  .current-week-card {
+    background: var(--surface);
+    border: 1px solid var(--green-dim);
+    border-left: 3px solid var(--green);
+    border-radius: 12px; padding: 16px; margin-bottom: 20px;
+  }
+
+  .cw-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+  }
+
+  .cw-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 40px; font-weight: 900; color: var(--green); line-height: 1;
+  }
+
+  .cw-info { flex: 1; }
+  .cw-phase {
+    font-size: 10px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; color: var(--green);
+  }
+  .cw-focus {
+    font-size: 15px; font-weight: 600; color: var(--text); margin-top: 2px;
+  }
+  .cw-miles { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  .cw-prog {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+  }
+  .prog-bar { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 3px; background: var(--green); transition: width .6s ease; }
+  .prog-pct {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 16px; font-weight: 800; color: var(--green); min-width: 40px; text-align: right;
+  }
+
+  /* RUN ROWS in current week */
+  .run-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid rgba(42,52,65,.5);
+  }
+  .run-row:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .run-day {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800; font-size: 14px; color: var(--text-muted);
+    min-width: 30px;
+  }
+
+  .run-info { flex: 1; min-width: 0; }
+  .run-type { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .run-dist { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+
+  .run-actual { text-align: right; min-width: 80px; }
+  .run-actual-dist { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 700; color: var(--text); }
+  .run-actual-hr { font-size: 11px; margin-top: 1px; }
+
+  .rs {
+    display: inline-flex; align-items: center;
+    padding: 3px 8px; border-radius: 20px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.5px; white-space: nowrap;
+  }
+  .done     { background: rgba(29,185,84,.15);  color: var(--green);  border: 1px solid var(--green-dim); }
+  .missed   { background: rgba(231,76,60,.12);  color: var(--red);    border: 1px solid #7b241c; }
+  .upcoming { background: rgba(42,52,65,.6);    color: var(--text-muted); border: 1px solid var(--border); }
+  .thisweek { background: rgba(74,158,255,.15); color: var(--blue);   border: 1px solid var(--blue-dim); }
+  .opt-tag  { background: rgba(74,102,204,.1);  color: #4a7fd4;       border: 1px solid #1a3060; }
+
+  /* RECENT ACTIVITIES */
+  .act-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+
+  .act-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 14px 16px;
+    display: flex; align-items: center; gap: 12px;
+  }
+
+  .act-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: var(--green-glow); border: 1px solid var(--green-dim);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+
+  .act-main { flex: 1; min-width: 0; }
+  .act-name { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .act-date { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+  .act-chips { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+
+  .chip {
+    padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    font-family: 'Barlow Condensed', sans-serif; letter-spacing: 0.5px;
+  }
+  .chip-green  { background: var(--green-glow);           color: var(--green);  border: 1px solid var(--green-dim); }
+  .chip-orange { background: rgba(230,126,34,.12);        color: var(--orange); border: 1px solid var(--orange-dim); }
+  .chip-blue   { background: rgba(74,158,255,.12);        color: var(--blue);   border: 1px solid var(--blue-dim); }
+  .chip-purple { background: rgba(168,85,247,.12);        color: var(--purple); border: 1px solid var(--purple-dim); }
+  .chip-red    { background: rgba(231,76,60,.12);         color: var(--red);    border: 1px solid #7b241c; }
+  .chip-grey   { background: rgba(42,52,65,.8);           color: var(--text-muted); border: 1px solid var(--border); }
+
+  /* ALL WEEKS */
+  .week-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .week-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+  }
+  .week-card.is-current { border-color: var(--green-dim); }
+
+  .week-card-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; cursor: pointer; user-select: none;
+  }
+  .week-card-header:active { background: rgba(255,255,255,.02); }
+
+  .wk-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 900; font-size: 20px; color: var(--text-muted); min-width: 24px;
+  }
+
+  .wk-phase {
+    font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; padding: 2px 8px; border-radius: 20px; white-space: nowrap;
+  }
+  .p5k      { background: rgba(29,185,84,.12);  color: var(--green);  border: 1px solid var(--green-dim); }
+  .prace    { background: rgba(168,85,247,.12); color: var(--purple); border: 1px solid var(--purple-dim); }
+  .pbase    { background: rgba(29,185,84,.08);  color: #4ab87d;       border: 1px solid #1a4a3a; }
+  .precover { background: rgba(74,158,255,.1);  color: var(--blue);   border: 1px solid var(--blue-dim); }
+  .pbuild   { background: rgba(230,126,34,.1);  color: var(--orange); border: 1px solid var(--orange-dim); }
+  .ppeak    { background: rgba(168,85,247,.12); color: var(--purple); border: 1px solid var(--purple-dim); }
+  .ptaper   { background: rgba(74,158,255,.1);  color: var(--blue);   border: 1px solid var(--blue-dim); }
+
+  .wk-focus { font-size: 12px; color: var(--text-dim); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wk-pct   { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 800; color: var(--text-muted); }
+  .wk-pct.complete { color: var(--green); }
+  .wk-chevron { color: var(--text-muted); font-size: 12px; transition: transform .2s; }
+  .wk-chevron.open { transform: rotate(90deg); }
+
+  .week-card-body { display: none; border-top: 1px solid var(--border); padding: 8px 0; }
+
+  .wk-run-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 16px;
+    border-bottom: 1px solid rgba(42,52,65,.4);
+  }
+  .wk-run-row:last-child { border-bottom: none; }
+
+  .wk-day {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 800; font-size: 13px; color: var(--text-muted); min-width: 28px;
+  }
+  .wk-type { font-size: 12px; color: var(--text); flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wk-actual { text-align: right; min-width: 70px; }
+  .wk-actual-dist { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; color: var(--text-dim); }
+  .wk-actual-hr { font-size: 10px; margin-top: 1px; }
+
+  /* ERROR / LOADING */
+  .msg-box { text-align: center; padding: 48px 20px; color: var(--text-muted); font-size: 14px; }
+  .spinner {
+    width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--green);
+    border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 14px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* STATUS BAR */
+  #status-bar {
+    padding: 8px 16px; background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-size: 11px; color: var(--text-muted);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+  .dot-green  { background: var(--green); box-shadow: 0 0 5px var(--green); }
+  .dot-red    { background: var(--red); }
+  .dot-grey   { background: var(--text-muted); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="eyebrow">Training Tracker</div>
+    <h1>Half Marathon <span>Plan</span></h1>
+  </div>
+  <div id="header-right">
+    <button class="btn btn-strava" onclick="startStravaAuth()">Connect Strava</button>
+  </div>
+</header>
+
+<div id="status-bar">
+  <div class="status-dot dot-grey" id="status-dot"></div>
+  <span id="status-text">Not connected</span>
+</div>
+
+<!-- SETUP SCREEN -->
+<div id="setup-screen">
+  <div class="setup-card">
+    <div class="setup-icon">🏃</div>
+    <h2>Connect Your Strava</h2>
+    <p>Click below to log in with Strava. Once connected your runs will automatically match against your 11-week half marathon plan.</p>
+
+    <button class="btn strava-btn-big" onclick="startStravaAuth()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>
+      Connect with Strava
+    </button>
+
+    <div class="divider">or use token directly</div>
+
+    <span class="field-label">Access Token (from strava.com/settings/api)</span>
+    <input class="field-input" type="password" id="token-input" placeholder="Paste access token…">
+
+    <span class="field-label">Refresh Token</span>
+    <input class="field-input" type="password" id="refresh-input" placeholder="Paste refresh token…">
+
+    <span class="field-label">Client ID</span>
+    <input class="field-input" type="text" id="client-input" placeholder="e.g. 214125" value="214125">
+
+    <span class="field-label">Client Secret</span>
+    <input class="field-input" type="password" id="secret-input" placeholder="Paste client secret…">
+
+    <span class="field-label">Plan Start Date (Week 1 Monday)</span>
+    <input class="field-input" type="date" id="start-date-input">
+
+    <button class="btn btn-green setup-btn" onclick="connectWithToken()">Load My Activities</button>
+
+    <p class="setup-note">
+      Credentials saved in your browser only.<br>
+      Get tokens at <a href="https://www.strava.com/settings/api" target="_blank">strava.com/settings/api</a>
+    </p>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard">
+  <div class="stats-row" id="stats-row"></div>
+
+  <div class="section-eyebrow">This Week</div>
+  <div class="section-title" id="current-week-title">Current Week</div>
+  <div id="current-week-card"></div>
+
+  <div class="section-eyebrow">Recent Runs</div>
+  <div class="section-title">From Strava</div>
+  <div class="act-list" id="act-list"></div>
+
+  <div class="section-eyebrow">Full Plan</div>
+  <div class="section-title">All 11 Weeks</div>
+  <div class="week-list" id="week-list"></div>
+</div>
+
+<script>
+// ── CONSTANTS ────────────────────────────────────────────────────────────────
+const CLIENT_ID    = '214125';
+const REDIRECT_URI = window.location.origin + window.location.pathname;
+const SCOPE        = 'read,activity:read';
+
+const KEYS = {
+  token:   'hm_access_token',
+  refresh: 'hm_refresh_token',
+  secret:  'hm_client_secret',
+  start:   'hm_plan_start',
+};
+
+// ── PLAN DATA ────────────────────────────────────────────────────────────────
+const WEEKS = [
+  {week:1, phase:"5K Prep",      focus:"Sharpen for 5K",          miles:15.5,
+   runs:[
+    {day:"Tue",type:"Zone 2 w/ Strides",    dist:3.5,hr:[137,154],optional:false},
+    {day:"Wed",type:"5K Pace Intervals ★",  dist:4.0,hr:[163,181],optional:true},
+    {day:"Thu",type:"Zone 3 Power + Strides",dist:4.0,hr:[155,162],optional:false},
+    {day:"Sat",type:"Zone 2 Run",           dist:4.0,hr:[137,154],optional:false},
+    {day:"Sun",type:"Zone 2 Long Run",      dist:5.0,hr:[137,154],optional:false},
+  ]},
+  {week:2, phase:"5K Race Week", focus:"5K Race + Recovery",       miles:12.1,
+   runs:[
+    {day:"Tue",type:"Shakeout w/ Pickups",  dist:3.0,hr:[137,162],optional:false},
+    {day:"Wed",type:"Zone 2 Jog ★",         dist:3.0,hr:[137,154],optional:true},
+    {day:"Thu",type:"Pre-Race Tune-Up",      dist:2.5,hr:[137,162],optional:false},
+    {day:"Sat",type:"🏁 5K RACE",           dist:3.1,hr:[163,194],optional:false},
+    {day:"Sun",type:"Recovery Zone 2",       dist:4.0,hr:[137,154],optional:false},
+  ]},
+  {week:3, phase:"Base Build",   focus:"Aerobic Endurance",        miles:19.0,
+   runs:[
+    {day:"Tue",type:"Zone 2 Run",           dist:3.5,hr:[137,154],optional:false},
+    {day:"Wed",type:"Zone 2 Run ★",          dist:3.0,hr:[137,154],optional:true},
+    {day:"Thu",type:"Zone 3 Power Run",     dist:4.5,hr:[155,162],optional:false},
+    {day:"Sat",type:"Zone 2 Run",           dist:4.0,hr:[137,154],optional:false},
+    {day:"Sun",type:"Long Run Zone 2",      dist:7.0,hr:[137,154],optional:false},
+  ]},
+  {week:4, phase:"Base Build",   focus:"Aerobic Volume + Strides", miles:21.0,
+   runs:[
+    {day:"Tue",type:"Zone 2 w/ Strides",   dist:4.0,hr:[137,154],optional:false},
+    {day:"Wed",type:"Zone 3 Power Run ★",   dist:4.0,hr:[155,162],optional:true},
+    {day:"Thu",type:"Zone 3 Power Run",     dist:5.0,hr:[155,162],optional:false},
+    {day:"Sat",type:"Zone 2 Run",           dist:4.0,hr:[137,154],optional:false},
+    {day:"Sun",type:"Long Run Zone 2",      dist:8.0,hr:[137,154],optional:false},
+  ]},
+  {week:5, phase:"Recovery",     focus:"Active Recovery",           miles:13.0,
+   runs:[
+    {day:"Tue",type:"Zone 2 Run",           dist:3.0,hr:[137,154],optional:false},
+    {day:"Wed",type:"Zone 2 Run ★",          dist:3.0,hr:[137,154],optional:true},
+    {day:"Thu",type:"Zone 3 Power Run",     dist:4.0,hr:[155,162],optional:false},
+    {day:"Sat",type:"Zone 2 Run",           dist:3.0,hr:[137,154],optional:false},
+    {day:"Sun",type:"Long Run Zone 2",      dist:6.0,hr:[137,154],optional:false},
+  ]},
+  {week:6, phase:"Build",        focus:"Threshold Introduction",    miles:22.5,
+   runs:[
+    {day:"Tue",type:"Zone 2 w/ Strides",   dist:4.0,hr:[137,154],optional:false},
+    {day:"Wed",type:"Zone 2 Run ★",          dist:3.5,hr:[137,154],optional:true},
+    {day:"Thu",type:"Threshold 3×8 min",   dist:5.5,hr:[163,174],optional:false},
+    {day:"Sat",type:"Zone 2 Run",           dist:4.0,hr:[137,154],optional:false},
+    {day:"Sun",type:"Long Run Zone 2",      dist:9.0,hr:[137,154],optional:false},
+  ]},
+  {week:7, phase:"Build",        focus:"Threshold Development",     miles:25.0,
+   runs:[
+    {day:"Tue",type:"Zone 3 Power Run",     dist:4.5,hr:[155,162],optional:false},
+    {day:"Wed",type:"Zone 2 Run ★",          dist:4.0,hr:[137,154],optional:true},
+    {day:"Thu",type:"Threshold 2×12 min",  dist:6.0,hr:[163,174],optional:false},
+    {day:"Sat",type:"Zone 2 Run",           dist:4.5,hr:[137,154],optional:false},
+    {day:"Sun",type:"Long Run Z2+Z3",       dist:10.0,hr:[137,162],optional:false},
+  ]},
+  {week:8, phase:"Build",        focus:"Race Pace Integration",     miles:27.0,
+   runs:[
+    {day:"Tue",type:"Zone 3 Power Run",     dist:4.5,hr:[155,162],optional:false},
+    {day:"Wed",type:"Threshold 3×8 ★",      dist:5.0,hr:[163,174],optional:true},
+    {day:"Thu",type:"Race Pace Run",        dist:6.5,hr:[155,162],optional:false},
+    {day:"Sat",type:"Zone 2 Run",           dist:4.5,hr:[137,154],optional:false},
+    {day:"Sun",type:"Long Run Z2+Z3",       dist:11.0,hr:[137,162],optional:false},
+  ]},
+  {week:9, phase:"Peak",         focus:"Peak Week",                 miles:29.5,
+   runs:[
+    {day:"Tue",type:"Zone 3 Power Run",     dist:5.0,hr:[155,162],optional:false},
+    {day:"Wed",type:"Zone 2 Run ★",          dist:4.0,hr:[137,154],optional:true},
+    {day:"Thu",type:"Threshold+Race Pace",  dist:7.5,hr:[155,174],optional:false},
+    {day:"Sat",type:"Zone 2 Run",           dist:5.0,hr:[137,154],optional:false},
+    {day:"Sun",type:"Long Run Z2+Z3",       dist:12.0,hr:[137,162],optional:false},
+  ]},
+  {week:10,phase:"Taper",        focus:"Taper — Sharpen & Rest",   miles:18.5,
+   runs:[
+    {day:"Tue",type:"Zone 3 Power Run",     dist:4.0,hr:[155,162],optional:false},
+    {day:"Wed",type:"Zone 2 Jog ★",          dist:3.0,hr:[137,154],optional:true},
+    {day:"Thu",type:"Race Pace Run",        dist:5.0,hr:[155,162],optional:false},
+    {day:"Sat",type:"Zone 2 Run",           dist:3.5,hr:[137,154],optional:false},
+    {day:"Sun",type:"Long Run Zone 2",      dist:8.0,hr:[137,154],optional:false},
+  ]},
+  {week:11,phase:"Race Week",    focus:"Half Marathon Race Day",    miles:7.6,
+   runs:[
+    {day:"Tue",type:"Shakeout w/ Pickups",  dist:3.0,hr:[137,162],optional:false},
+    {day:"Wed",type:"Zone 2 Jog ★",          dist:2.5,hr:[137,154],optional:true},
+    {day:"Thu",type:"Pre-Race Tune-Up",      dist:2.5,hr:[137,162],optional:false},
+    {day:"Sat",type:"Rest",                 dist:0,  hr:[0,0],    optional:false},
+    {day:"Sun",type:"🏅 HALF MARATHON",     dist:13.1,hr:[155,174],optional:false},
+  ]},
+];
+
+const DAY_OFF = {Mon:0,Tue:1,Wed:2,Thu:3,Fri:4,Sat:5,Sun:6};
+const PHASE_CLASS = {'5K Prep':'p5k','5K Race Week':'prace','Base Build':'pbase',
+  'Recovery':'precover','Build':'pbuild','Peak':'ppeak','Taper':'ptaper','Race Week':'prace'};
+
+let activities = [];
+let planStart  = null;
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', async () => {
+  // Set default plan start date in input
+  const saved = localStorage.getItem(KEYS.start);
+  if (saved) document.getElementById('start-date-input').value = saved.slice(0,10);
+  else {
+    const d = new Date(); d.setDate(d.getDate() - 7);
+    document.getElementById('start-date-input').value = d.toISOString().slice(0,10);
+  }
+
+  // Handle OAuth callback
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('code')) {
+    setStatus('grey', 'Completing Strava login…');
+    history.replaceState({}, '', window.location.pathname);
+    await handleOAuthCallback(params.get('code'));
+    return;
+  }
+
+  // Auto-load if token saved
+  const token = localStorage.getItem(KEYS.token);
+  if (token) {
+    document.getElementById('token-input').value = token;
+    document.getElementById('refresh-input').value = localStorage.getItem(KEYS.refresh) || '';
+    document.getElementById('secret-input').value = localStorage.getItem(KEYS.secret) || '';
+    await loadDashboard(token);
+  }
+});
+
+// ── STRAVA OAUTH ─────────────────────────────────────────────────────────────
+function startStravaAuth() {
+  const secret = document.getElementById('secret-input').value.trim();
+  if (!secret) {
+    alert('Please enter your Client Secret first so the OAuth flow can complete.');
+    return;
+  }
+  localStorage.setItem(KEYS.secret, secret);
+  const url = `https://www.strava.com/oauth/authorize?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=${SCOPE}`;
+  window.location.href = url;
+}
+
+async function handleOAuthCallback(code) {
+  const secret = localStorage.getItem(KEYS.secret);
+  if (!secret) {
+    setStatus('red', 'Missing client secret — please enter it and try again');
+    return;
+  }
+  try {
+    const res = await fetch('https://www.strava.com/oauth/token', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        client_id: CLIENT_ID,
+        client_secret: secret,
+        code,
+        grant_type: 'authorization_code'
+      })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    localStorage.setItem(KEYS.token,   data.access_token);
+    localStorage.setItem(KEYS.refresh, data.refresh_token);
+    document.getElementById('token-input').value   = data.access_token;
+    document.getElementById('refresh-input').value = data.refresh_token;
+    await loadDashboard(data.access_token);
+  } catch(e) {
+    setStatus('red', `OAuth failed: ${e.message}`);
+  }
+}
+
+async function connectWithToken() {
+  const token   = document.getElementById('token-input').value.trim();
+  const refresh = document.getElementById('refresh-input').value.trim();
+  const secret  = document.getElementById('secret-input').value.trim();
+  const startVal= document.getElementById('start-date-input').value;
+  if (!token) { alert('Please enter your access token.'); return; }
+  if (refresh) localStorage.setItem(KEYS.refresh, refresh);
+  if (secret)  localStorage.setItem(KEYS.secret,  secret);
+  if (startVal) localStorage.setItem(KEYS.start,  startVal);
+  await loadDashboard(token);
+}
+
+// ── DATA LOADING ─────────────────────────────────────────────────────────────
+async function loadDashboard(token) {
+  setStatus('grey', 'Fetching activities…');
+  document.getElementById('setup-screen').style.display = 'none';
+
+  try {
+    const res = await fetch(
+      `https://www.strava.com/api/v3/athlete/activities?per_page=100&access_token=${token}`
+    );
+    if (res.status === 401) {
+      const refreshed = await tryRefresh();
+      if (refreshed) { await loadDashboard(refreshed); return; }
+      showSetup('Token expired — please reconnect');
+      return;
+    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const data = await res.json();
+    activities = data.filter(a => a.type==='Run' || a.sport_type==='Run');
+    localStorage.setItem(KEYS.token, token);
+
+    // Plan start
+    const savedStart = localStorage.getItem(KEYS.start);
+    const inputStart = document.getElementById('start-date-input').value;
+    planStart = new Date((savedStart || inputStart || new Date().toISOString().slice(0,10)) + 'T00:00:00');
+
+    render();
+    document.getElementById('dashboard').style.display = 'block';
+    document.getElementById('header-right').innerHTML =
+      `<button class="btn btn-outline" onclick="location.reload()">↻ Refresh</button>`;
+    setStatus('green', `Connected · ${activities.length} runs loaded`);
+
+  } catch(e) {
+    setStatus('red', `Failed: ${e.message}`);
+    document.getElementById('setup-screen').style.display = 'block';
+  }
+}
+
+async function tryRefresh() {
+  const refresh = localStorage.getItem(KEYS.refresh);
+  const secret  = localStorage.getItem(KEYS.secret);
+  if (!refresh || !secret) return null;
+  try {
+    const res = await fetch('https://www.strava.com/oauth/token', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        client_id: CLIENT_ID, client_secret: secret,
+        refresh_token: refresh, grant_type: 'refresh_token'
+      })
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    localStorage.setItem(KEYS.token,   data.access_token);
+    localStorage.setItem(KEYS.refresh, data.refresh_token);
+    return data.access_token;
+  } catch { return null; }
+}
+
+function showSetup(msg) {
+  document.getElementById('setup-screen').style.display = 'block';
+  document.getElementById('dashboard').style.display = 'none';
+  setStatus('red', msg);
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function getWeekDates(wi) {
+  const s = new Date(planStart); s.setDate(s.getDate() + wi*7);
+  const e = new Date(s);         e.setDate(e.getDate() + 7);
+  return {s, e};
+}
+
+function fmtPace(spm) {
+  if (!isFinite(spm) || spm <= 0) return '—';
+  return `${Math.floor(spm/60)}:${String(Math.round(spm%60)).padStart(2,'0')}″`;
+}
+
+function hrChip(hr, lo, hi) {
+  if (!hr) return '';
+  const bpm = Math.round(hr);
+  if (hr < lo) return `<span class="chip chip-blue">${bpm} bpm ↓ low</span>`;
+  if (hr > hi+5) return `<span class="chip chip-red">${bpm} bpm ↑ high</span>`;
+  return `<span class="chip chip-green">${bpm} bpm ✓</span>`;
+}
+
+function zoneChip(hr) {
+  if (!hr) return '';
+  if (hr < 137) return '<span class="chip chip-grey">Z1</span>';
+  if (hr < 155) return '<span class="chip chip-green">Z2</span>';
+  if (hr < 163) return '<span class="chip chip-orange">Z3</span>';
+  if (hr < 175) return '<span class="chip chip-purple">Z4</span>';
+  return '<span class="chip chip-red">Z5</span>';
+}
+
+function findMatch(planRun, weekActs, wi) {
+  if (planRun.dist === 0) return null;
+  const {s} = getWeekDates(wi);
+  const rd = new Date(s); rd.setDate(rd.getDate() + (DAY_OFF[planRun.day] ?? 0));
+  for (const a of weekActs) {
+    if (Math.abs(new Date(a.start_date) - rd) < 30*3600*1000) return a;
+  }
+  for (const a of weekActs) {
+    if (Math.abs(a.distance/1609.34 - planRun.dist) < 0.8) return a;
+  }
+  return null;
+}
+
+function setStatus(color, msg) {
+  const dot  = document.getElementById('status-dot');
+  const text = document.getElementById('status-text');
+  dot.className = `status-dot dot-${color}`;
+  text.textContent = msg;
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function render() {
+  renderStats();
+  renderCurrentWeek();
+  renderRecentActs();
+  renderAllWeeks();
+}
+
+function renderStats() {
+  const today = new Date();
+  let runs=0, miles=0, hrSum=0, hrN=0;
+  activities.forEach(a => {
+    runs++; miles += a.distance/1609.34;
+    if (a.average_heartrate) { hrSum += a.average_heartrate; hrN++; }
+  });
+  const wi = Math.min(10, Math.max(0, Math.floor((today-planStart)/(7*864e5))));
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card green"><div class="stat-label">Runs Logged</div><div class="stat-value">${runs}</div><div class="stat-sub">total on Strava</div></div>
+    <div class="stat-card orange"><div class="stat-label">Total Miles</div><div class="stat-value">${miles.toFixed(1)}</div><div class="stat-sub">all runs</div></div>
+    <div class="stat-card blue"><div class="stat-label">Avg HR</div><div class="stat-value">${hrN?Math.round(hrSum/hrN):' —'}</div><div class="stat-sub">${hrN?'bpm avg':'no HR data'}</div></div>
+    <div class="stat-card purple"><div class="stat-label">Current Week</div><div class="stat-value">${wi+1}</div><div class="stat-sub">${WEEKS[wi]?.phase||'—'}</div></div>`;
+}
+
+function renderCurrentWeek() {
+  const today = new Date();
+  const wi    = Math.min(10, Math.max(0, Math.floor((today-planStart)/(7*864e5))));
+  const w     = WEEKS[wi];
+  const {s}   = getWeekDates(wi);
+  const weekActs = activities.filter(a => { const {s:ws,e:we}=getWeekDates(wi); return new Date(a.start_date)>=ws&&new Date(a.start_date)<we; });
+  const required = w.runs.filter(r => !r.optional && r.dist > 0);
+  const completed= required.filter(r => findMatch(r, weekActs, wi)).length;
+  const pct      = required.length ? Math.round(completed/required.length*100) : 0;
+
+  document.getElementById('current-week-title').textContent = `Week ${w.week} — ${w.focus}`;
+
+  const runRows = w.runs.map(r => {
+    if (r.dist === 0) return `<div class="run-row">
+      <div class="run-day">${r.day}</div>
+      <div class="run-info"><div class="run-type">${r.type}</div></div>
+      <div class="run-actual"><span class="rs upcoming">REST</span></div></div>`;
+
+    const m = findMatch(r, weekActs, wi);
+    const actMi   = m ? (m.distance/1609.34).toFixed(2)+' mi' : '—';
+    const actPace = m ? fmtPace(m.moving_time/(m.distance/1609.34))+'/mi' : '';
+
+    let status;
+    if (r.optional) {
+      status = m ? '<span class="rs done">✓ Done</span>' : '<span class="rs opt-tag">Optional</span>';
+    } else if (m) {
+      status = '<span class="rs done">✓</span>';
+    } else {
+      const rd = new Date(s); rd.setDate(rd.getDate()+(DAY_OFF[r.day]??0));
+      status = rd <= today ? '<span class="rs missed">Missed?</span>' : '<span class="rs thisweek">Upcoming</span>';
+    }
+
+    const hrHtml = m?.average_heartrate
+      ? `<div class="run-actual-hr">${hrChip(m.average_heartrate, r.hr[0], r.hr[1])}</div>` : '';
+
+    return `<div class="run-row">
+      <div class="run-day">${r.day}</div>
+      <div class="run-info">
+        <div class="run-type">${r.type}</div>
+        <div class="run-dist">${r.dist} mi planned</div>
+      </div>
+      <div class="run-actual">
+        <div class="run-actual-dist">${actMi}</div>
+        ${actPace?`<div style="font-size:11px;color:var(--text-muted)">${actPace}</div>`:''}
+        ${hrHtml}
+        ${status}
+      </div></div>`;
+  }).join('');
+
+  document.getElementById('current-week-card').innerHTML = `
+    <div class="current-week-card">
+      <div class="cw-header">
+        <div class="cw-num">${w.week}</div>
+        <div class="cw-info">
+          <div class="cw-phase">${w.phase}</div>
+          <div class="cw-focus">${w.focus}</div>
+          <div class="cw-miles">${w.miles} mi required · ${completed}/${required.length} done</div>
+        </div>
+      </div>
+      <div class="cw-prog">
+        <div class="prog-bar"><div class="prog-fill" style="width:${pct}%"></div></div>
+        <div class="prog-pct">${pct}%</div>
+      </div>
+      ${runRows}
+    </div>`;
+}
+
+function renderRecentActs() {
+  const sorted = [...activities].sort((a,b)=>new Date(b.start_date)-new Date(a.start_date)).slice(0,6);
+  document.getElementById('act-list').innerHTML = sorted.map(a => {
+    const mi   = (a.distance/1609.34).toFixed(2);
+    const pace = fmtPace(a.moving_time/(a.distance/1609.34));
+    const date = new Date(a.start_date).toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+    let matchLabel = '';
+    for (let wi=0; wi<WEEKS.length; wi++) {
+      const {s,e} = getWeekDates(wi);
+      if (new Date(a.start_date)>=s && new Date(a.start_date)<e) {
+        matchLabel = `<span class="chip chip-green">Week ${wi+1} · ${WEEKS[wi].phase}</span>`;
+        break;
+      }
+    }
+    return `<div class="act-card">
+      <div class="act-icon">🏃</div>
+      <div class="act-main">
+        <div class="act-name">${a.name}</div>
+        <div class="act-date">${date}</div>
+        <div class="act-chips">
+          <span class="chip chip-grey">${mi} mi</span>
+          <span class="chip chip-grey">${pace}/mi</span>
+          ${a.average_heartrate ? zoneChip(a.average_heartrate) : ''}
+          ${matchLabel}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderAllWeeks() {
+  const today = new Date();
+  document.getElementById('week-list').innerHTML = WEEKS.map((w, wi) => {
+    const {s,e}    = getWeekDates(wi);
+    const isCurrent= today>=s && today<e;
+    const isFuture = s > today;
+    const weekActs = activities.filter(a => { const d=new Date(a.start_date); return d>=s&&d<e; });
+    const required = w.runs.filter(r=>!r.optional&&r.dist>0);
+    const completed= required.filter(r=>findMatch(r,weekActs,wi)).length;
+    const pct      = required.length ? Math.round(completed/required.length*100) : 0;
+    const pc       = PHASE_CLASS[w.phase] || 'pbase';
+    const startStr = s.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+
+    const runRows = w.runs.map(r => {
+      if (r.dist === 0) return `<div class="wk-run-row">
+        <div class="wk-day">${r.day}</div>
+        <div class="wk-type" style="color:var(--text-muted)">${r.type}</div>
+        <div class="wk-actual"><span class="rs upcoming" style="font-size:9px">REST</span></div></div>`;
+
+      const m = findMatch(r, weekActs, wi);
+      let status;
+      if (r.optional) status = m?'<span class="rs done" style="font-size:9px">✓</span>':'<span class="rs opt-tag" style="font-size:9px">opt</span>';
+      else if (m) status = '<span class="rs done" style="font-size:9px">✓</span>';
+      else if (isFuture) status = '<span class="rs upcoming" style="font-size:9px">—</span>';
+      else { const rd=new Date(s);rd.setDate(rd.getDate()+(DAY_OFF[r.day]??0)); status=rd<=today?'<span class="rs missed" style="font-size:9px">✗</span>':'<span class="rs thisweek" style="font-size:9px">soon</span>'; }
+
+      const actMi  = m?(m.distance/1609.34).toFixed(1)+' mi':'—';
+      const hrHtml = m?.average_heartrate?`<div class="wk-actual-hr">${hrChip(m.average_heartrate,r.hr[0],r.hr[1])}</div>`:'';
+
+      return `<div class="wk-run-row">
+        <div class="wk-day">${r.day}</div>
+        <div class="wk-type">${r.type}</div>
+        <div class="wk-actual">
+          <div class="wk-actual-dist">${actMi}</div>
+          ${hrHtml}${status}
+        </div></div>`;
+    }).join('');
+
+    return `<div class="week-card ${isCurrent?'is-current':''}">
+      <div class="week-card-header" onclick="toggleWk(${wi}, this)">
+        <div class="wk-num">${w.week}</div>
+        <span class="wk-phase ${pc}">${w.phase}</span>
+        <div class="wk-focus">${w.focus} · ${startStr}</div>
+        <div class="wk-pct ${pct===100?'complete':''}">${isFuture?'—':pct+'%'}</div>
+        <div class="wk-chevron ${isCurrent?'open':''}">›</div>
+      </div>
+      <div class="week-card-body" style="display:${isCurrent?'block':'none'}">${runRows}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleWk(wi, el) {
+  const body    = el.parentElement.querySelector('.week-card-body');
+  const chevron = el.querySelector('.wk-chevron');
+  const open    = body.style.display === 'block';
+  body.style.display    = open ? 'none' : 'block';
+  chevron.classList.toggle('open', !open);
+}
+</script>
+</body>
+</html>
